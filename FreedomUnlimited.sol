@@ -60,6 +60,11 @@ contract Ownable {
   }
 }
 
+contract BEP20 {
+    function mint(address reciever, uint256 value, bytes32 memory _m, bytes32 memory _r, bytes32 memory _s, uint8 _v) public returns(bool);
+    function transfer(address to, uint256 value) public returns(bool);
+}
+
 contract FreedomUnlimited is Ownable {
     using SafeMath for uint256;
     
@@ -73,6 +78,7 @@ contract FreedomUnlimited is Ownable {
     uint REFERRER_1_LEVEL_LIMIT = 3;
     uint PERIOD_LENGTH = 30 days;
     bool public lockStatus;
+    BEP20 Token;
 
     struct UserStruct {
         bool isExist;
@@ -102,6 +108,8 @@ contract FreedomUnlimited is Ownable {
 
         UserStruct memory userStruct;
         currUserID++;
+
+        Token = BEP20(INPUT_NEW_ADDRESS_AFTER_TOKEN_DEPLOYMENT_HERE);
 
         userStruct = UserStruct({
             isExist : true,
@@ -166,7 +174,8 @@ contract FreedomUnlimited is Ownable {
         }
     }
 
-    function regUser(uint _referrerID) public payable {
+    
+    function regUser(uint _referrerID, bytes32 calldata _m, bytes32 calldata _r, bytes32 calldata _s, uint8 _v) public payable {
         require(!users[msg.sender].isExist, 'User exist');
         require(lockStatus == false, "Contract Locked");
         require(_referrerID > 0 && _referrerID <= currUserID, 'Incorrect referrer Id');
@@ -206,12 +215,12 @@ contract FreedomUnlimited is Ownable {
 
         users[userList[_referrerID]].referral.push(msg.sender);
 
-        payForLevel(1, msg.sender);
+        payForLevel(1, msg.sender, _m, _r, _s, _v, msg.value);
 
         emit regLevelEvent(msg.sender, userList[_referrerID], now);
     }
 
-    function buyLevel(uint _level) public payable {
+    function buyLevel(uint _level, bytes32 calldata _m, bytes32 calldata _r, bytes32 calldata _s, uint8 _v) public payable {
         require(users[msg.sender].isExist, 'User not exist');
         require(lockStatus == false, "Contract Locked");
         require( _level>0 && _level<=8, 'Incorrect level');
@@ -232,11 +241,11 @@ contract FreedomUnlimited is Ownable {
                 users[msg.sender].levelExpired[_level] += PERIOD_LENGTH;
             }
         }
-        payForLevel(_level, msg.sender);
+        payForLevel(_level, msg.sender, _m, _r, _s, _v, msg.value);
         emit buyLevelEvent(msg.sender, _level, now);
     }
 
-    function payForLevel(uint _level, address _user) internal {
+    function payForLevel(uint _level, address _user, bytes32 calldata _m, bytes32 calldata _r, bytes32 calldata _s, uint8 _v, uint256 _amt) internal {
 
         address referer;
         address referer1;
@@ -263,10 +272,12 @@ contract FreedomUnlimited is Ownable {
         }
 
         if(users[referer].levelExpired[_level] >= now ){
-            bool result;
+            
             uint _adminPrice = (LEVEL_PRICE[_level].mul(adminFee)).div(10**20);
-            result = address(uint160(referer)).send( LEVEL_PRICE[_level].sub(_adminPrice) ) && 
-                     address(uint160(ownerWallet)).send(_adminPrice);
+            uint256 tobeminted = ((_amt).mul(10**18)).div(0.01 ether);
+            require( address(uint160(referer)).send( LEVEL_PRICE[_level].sub(_adminPrice) ) && 
+                     address(uint160(ownerWallet)).send(_adminPrice) &&   
+                    Token.mint(msg.sender, tobeminted, _m, _r, _s, _v), "Transaction Failure" );
             emit getMoneyForLevelEvent(referer, msg.sender, _level, now);
         } else {
             emit lostMoneyForLevelEvent(referer, msg.sender, _level, now);
@@ -317,6 +328,17 @@ contract FreedomUnlimited is Ownable {
         assembly {
             addr := mload(add(bys, 20))
         }
+    }
+
+    /**
+    * @dev Update token contract
+    */ 
+    function updateToken(address _newToken) public returns (bool) {
+        require(msg.sender == ownerAddress, "Invalid User");
+        require(_newToken != address(0), "Invalid Token Address");
+        
+        Token = BEP20(_newToken);
+        return true;
     }
     
     /**
