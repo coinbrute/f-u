@@ -58,7 +58,8 @@ function App() {
       const referrerId = e.target.elements[0].value;
       const signer = await provider.getSigner();
       const regUser = new ethers.Contract(freedomUnlimited.address, FreedomUnlimited.abi, signer);
-      const tx = await regUser.regUser(referrerId, {value: ethers.utils.formatEther(".05")});
+      const amount = ethers.utils.formatEther("50000000000000000");
+      const tx = await regUser.regUser(referrerId, {value: "50000000000000000"});
       await tx.wait();
       const newUser = await freedomUnlimited.getUser(await provider.getSigner().getAddress());
       setFreedomData(newUser);
