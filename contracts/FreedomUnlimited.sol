@@ -387,4 +387,15 @@ contract FreedomUnlimited is Ownable {
         }
         return totalEth;
     }
+
+    /**
+     * @dev get user at address
+     */
+    function getUser(address _user) public view returns (bool, uint, uint, uint, uint) {
+        if(users[_user].isExist == false) {
+            return(false, currUserID, 0, 0, 0);
+        } else {
+            return(users[_user].isExist, users[_user].id, users[_user].referrerID, users[_user].currentLevel, users[_user].totalEarningEth);
+        }
+    }
 }
