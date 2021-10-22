@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.5.14;
+pragma solidity ^0.8.0;
 
 
 library SafeMath {
@@ -41,11 +41,11 @@ library SafeMath {
 }
 
 
-contract BEP20 {
-    function transferFrom(address from, address to, uint256 value) public returns (bool);
-    function approve(address spender, uint256 value) public returns (bool);
-    function transfer(address to, uint256 value) public returns(bool);
-    function allowance(address owner, address spender) public view returns (uint256);
+abstract contract BEP20 {
+    function transferFrom(address from, address to, uint256 value) virtual public returns (bool);
+    function approve(address spender, uint256 value) virtual public returns (bool);
+    function transfer(address to, uint256 value) virtual public returns(bool);
+    function allowance(address owner, address spender) virtual public view returns (uint256);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
@@ -67,7 +67,7 @@ contract FreedomUnlimitedToken is BEP20 {
     mapping (address => mapping (address => uint256)) public allowed;
     mapping (bytes32 => bool) private hashConfirmation;
 
-    constructor (address _burnAddress, address _sigAddress) public {
+    constructor (address _burnAddress, address _sigAddress) {
         symbol = "FreedomU";
         name = "Freedom Unlimited";
         decimals = 18;
@@ -94,7 +94,7 @@ contract FreedomUnlimitedToken is BEP20 {
      * @param _to Receiver address
      * @param _value Amount of the tokens
      */
-    function transfer(address _to, uint256 _value) public returns (bool) {
+    function transfer(address _to, uint256 _value) override public returns (bool) {
         require(_to != address(0), "Invalid address");
         require(_value <= balances[msg.sender], "Insufficient balance");
         
@@ -115,7 +115,7 @@ contract FreedomUnlimitedToken is BEP20 {
      * @param _to  The Receiver address
      * @param _value  the amount of tokens to be transferred
      */
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) override public returns (bool) {
         require(_from != address(0), "Invalid from address");
         require(_to != address(0), "Invalid to address");
         require(_value <= balances[_from], "Invalid balance");
@@ -138,7 +138,7 @@ contract FreedomUnlimitedToken is BEP20 {
      * @param _spender Spender address
      * @param _value Amount of tokens to be allowed
      */
-    function approve(address _spender, uint256 _value) public returns (bool) {
+    function approve(address _spender, uint256 _value) override public returns (bool) {
         require(_spender != address(0), "Null address");
         require(_value > 0, "Invalid value");
         allowed[msg.sender][_spender] = _value;
@@ -151,7 +151,7 @@ contract FreedomUnlimitedToken is BEP20 {
      * @param _owner Holder address
      * @param _spender Spender address
      */ 
-    function allowance(address _owner, address _spender) public view returns (uint256) {
+    function allowance(address _owner, address _spender) override public view returns (uint256) {
         return allowed[_owner][_spender];
     }  
     
@@ -187,22 +187,20 @@ contract FreedomUnlimitedToken is BEP20 {
     }
     
     /**
-     * @dev To mint FreedomU Tokens
+     * @dev To mint OAP Tokens
      * @param _receiver Reciever address
      * @param _amount Amount to mint
-     * @param _m - message hash 
-     * @param _r - r of signature 
-     * @param _s - s of signature 
+     * @param _mrs _mrs[0] - message hash _mrs[1] - r of signature _mrs[2] - s of signature 
      * @param _v  v of signature
      */ 
-    function mint(address _receiver, uint256 _amount, bytes32 memory _m, bytes32 memory _r, bytes32 memory _s, uint8 _v) public returns (bool) {
+    function mint(address _receiver, uint256 _amount,bytes32[3] memory _mrs, uint8 _v) public returns (bool) {
         require(_receiver != address(0), "Invalid address");
         require(_amount >= 0, "Invalid amount");
-        require(hashConfirmation[_m] != true, "Hash exists");
-        require(ecrecover(_m, _v, _r, _s) == sigAddress, "Invalid Signature");
+        require(hashConfirmation[_mrs[0]] != true, "Hash exists");
+        require(ecrecover(_mrs[0], _v, _mrs[1], _mrs[2]) == sigAddress, "Invalid Signature");
         totalSupply = totalSupply.add(_amount);
         balances[_receiver] = balances[_receiver].add(_amount);
-        hashConfirmation[_m] = true;
+        hashConfirmation[_mrs[0]] = true;
         emit Transfer(address(0), _receiver, _amount);
         return true;
     }
