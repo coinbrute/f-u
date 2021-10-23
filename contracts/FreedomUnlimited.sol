@@ -226,23 +226,19 @@ contract FreedomUnlimited is Ownable {
     function buyLevel(uint _level) public payable {
         require(users[msg.sender].isExist, 'User not exist');
         require(lockStatus == false, "Contract Locked");
-        require( _level>0 && _level<=8, 'Incorrect level');
+        require( _level>1 && _level<=8, 'Incorrect level');
 
-        if(_level == 1){
-            require(msg.value==LEVEL_PRICE[1], 'Incorrect Value');
-            levelExpired[msg.sender][1] += PERIOD_LENGTH;
+
+        require(msg.value==LEVEL_PRICE[_level], 'Incorrect Value');
+
+        for(uint l =_level-1; l>0; l-- ){
+            require(levelExpired[msg.sender][l] >= block.timestamp, 'Buy the previous level');
+        }
+
+        if(levelExpired[msg.sender][_level] == 0){
+            levelExpired[msg.sender][_level] = block.timestamp + PERIOD_LENGTH;
         } else {
-            require(msg.value==LEVEL_PRICE[_level], 'Incorrect Value');
-
-            for(uint l =_level-1; l>0; l-- ){
-                require(levelExpired[msg.sender][l] >= block.timestamp, 'Buy the previous level');
-            }
-
-            if(levelExpired[msg.sender][_level] == 0){
-                levelExpired[msg.sender][_level] = block.timestamp + PERIOD_LENGTH;
-            } else {
-                levelExpired[msg.sender][_level] += PERIOD_LENGTH;
-            }
+            levelExpired[msg.sender][_level] += PERIOD_LENGTH;
         }
         payForLevel(_level, msg.sender);
         emit buyLevelEvent(msg.sender, _level, block.timestamp);
