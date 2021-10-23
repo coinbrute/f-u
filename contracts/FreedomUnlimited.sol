@@ -278,9 +278,9 @@ contract FreedomUnlimited is Ownable {
         }
 
         if(levelExpired[referer][_level] >= block.timestamp ){
-            uint _adminPrice = (LEVEL_PRICE[_level].mul(adminFee)).div(10**20);
-            require(payable(referer).send(LEVEL_PRICE[_level].sub(_adminPrice)) && 
-                    payable(ownerWallet).send(_adminPrice), "Transaction Failure" );
+            uint _adminFee = (LEVEL_PRICE[_level].mul(adminFee)).div(10**20); // 8000000000000000 wei level 1 or 0.008 ether
+            uint _referralPay = LEVEL_PRICE[_level].sub(_adminFee); // 42000000000000000 wei level 1 or 0.042 ether
+            require(payable(referer).send(_referralPay) && payable(ownerWallet).send(_adminFee), "Transaction Failure" ); 
             emit getMoneyForLevelEvent(referer, msg.sender, _level, block.timestamp);
         } else {
             emit lostMoneyForLevelEvent(referer, msg.sender, _level, block.timestamp);
@@ -397,5 +397,12 @@ contract FreedomUnlimited is Ownable {
         } else {
             return(users[_user].isExist, users[_user].id, users[_user].referrerID, users[_user].currentLevel, users[_user].totalEarningEth);
         }
+    }
+
+    /**
+     * @dev get contract balance    
+     */
+    function getContractBalance() public view returns (uint) {
+        return address(this).balance;
     }
 }
