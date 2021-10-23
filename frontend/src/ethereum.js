@@ -1,6 +1,5 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import { ethers, Contract } from 'ethers';
-// import SimpleStorage from './contracts/SimpleStorage.json';
 import FreedomUnlimited from './contracts/FreedomUnlimited.json';
 
 const getBlockchain = () =>
