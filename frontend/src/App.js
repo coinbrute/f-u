@@ -5,18 +5,24 @@ import FreedomUnlimited from './contracts/FreedomUnlimited.json';
 import getTxValue from './helpers.js';
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
-
+const returningUser = false;
+const previousWallet = '';
 // Show metamask for users to decide if they will pay or not
-// async function requestAccount() {
-//   try {
-//     await window.ethereum.request({ method: 'eth_requestAccounts' });
-//   } catch (error) {
-//     console.log("error");
-//     console.error(error);
+async function requestAccount() {
+  try {
+    const walletAddress = await window.ethereum.request({method: "eth_requestAccounts", params: [{eth_accounts: {}}]});
+    if(walletAddress === previousWallet) { // we are a returning account already signed in
+      returningUser = true;
+    } else {
+      returningUser = false;
+    }
+  } catch (error) {
+    console.log("error");
+    console.error(error);
 
-//     alert("Login to Metamask first");
-//   }
-// }
+    alert("Login to Metamask first");
+  }
+}
 
 function App() {
   const [freedomUnlimited, setFreedomUnlimited] = useState(undefined);
@@ -26,7 +32,7 @@ function App() {
     async function fetchData() {
 
       try {
-
+        await requestAccount();
         const { freedomUnlimited } = await getBlockchain();
         const contract = new ethers.Contract(freedomUnlimited.address, FreedomUnlimited.abi, provider);
         const freedomUnlimitedData = await freedomUnlimited.getUser(await provider.getSigner().getAddress());
@@ -57,8 +63,9 @@ function App() {
   }, []);
 
   const regUser = async e => {
-    if (typeof window.ethereum !== 'undefined') {
-
+    if (!returningUser) {
+      await requestAccount();
+    } else {
       e.preventDefault();
       const referrerId = e.target.elements[0].value;
       const signer = await provider.getSigner();
@@ -72,8 +79,9 @@ function App() {
   };
 
   const buyLevel = async e => {
-    if (typeof window.ethereum !== 'undefined') {
-
+    if (!returningUser) {
+      await requestAccount();
+    } else {
       e.preventDefault();
       const level = e.target.elements[0].value;
       const signer = await provider.getSigner();
