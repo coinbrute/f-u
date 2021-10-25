@@ -15,6 +15,7 @@ function App() {
   const [user, setSpearheadData] = useState(undefined);
   const [expiry, setExpiryData] = useState(undefined);
   const [expiryLvl, setExpiryLvlData] = useState(undefined);
+  const [contractBalance, setContractBalance] = useState(undefined);
   const [walletAddress, setWallet] = useState("");
   // eslint-disable-next-line
   const [status, setStatus] = useState("");
@@ -28,6 +29,8 @@ function App() {
     const signer = await provider.getSigner().getAddress();
     const spearheadData = await spearhead.getUser(signer);
     const expiryData = await spearhead.viewUserLevelExpired(signer, 1);
+    const contractBalance = await spearhead.getContractBalance(signer);
+    setContractBalance(contractBalance);
     setExpiryData(expiryData);
     setExpiryLvlData(1);
     setSpearhead(spearhead);
@@ -124,6 +127,12 @@ function App() {
     setExpiryData(expiry);
   };
 
+  const getContractBalance = async => {
+    e.preventDefault();
+    const contractBalance = await spearhead.getContractBalance(await provider.getSigner().getAddress());
+    setContractBalance(contractBalance);
+  }
+
   if(
     typeof spearhead === 'undefined' || typeof user === 'undefined'
   ) {
@@ -206,6 +215,19 @@ function App() {
         <div className='col-sm-6'>
           <h2>User Level Expiry:</h2>
           <p>{expiryLvl.toString()} {expiry.toString()}</p>
+        </div>
+
+        <button 
+          type="submit" 
+          className="btn btn-primary"
+          onClick={getContractBalance()}
+        >
+          View Contract Balance
+        </button>
+
+        <div className='col-sm-6'>
+          <h2>Contract Balance:</h2>
+          <p>{contractBalance.toString()}</p>
         </div>
 
         <p id="status" style={{ color: "red" }}>
