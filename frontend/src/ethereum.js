@@ -1,6 +1,6 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import { ethers, Contract } from 'ethers';
-import Spearhead from './contracts/Spearhead.json';
+import Spearhead from './contracts/SpearheadProtocol.json';
 
 const getBlockchain = () =>
   new Promise( async (resolve, reject) => {

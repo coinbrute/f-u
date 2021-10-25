@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import getBlockchain from './ethereum.js';
 import { ethers } from 'ethers';
-import Spearhead from './contracts/Spearhead.json';
+import Spearhead from './contracts/SpearheadProtocol.json';
+import getTxValue from "./helpers";
 import {
-  getTxValue,
   connectWallet,
   getCurrentWalletConnected,
 } from "./helpers.js";
@@ -13,6 +13,8 @@ const provider = new ethers.providers.Web3Provider(window.ethereum);
 function App() {
   const [spearhead, setSpearhead] = useState(undefined);
   const [user, setSpearheadData] = useState(undefined);
+  const [expiry, setExpiryData] = useState(undefined);
+  const [expiryLvl, setExpiryLvlData] = useState(undefined);
   const [walletAddress, setWallet] = useState("");
   // eslint-disable-next-line
   const [status, setStatus] = useState("");
@@ -23,7 +25,11 @@ function App() {
     setStatus(status);
     addWalletListener();
     const { spearhead } = await getBlockchain();
-    const spearheadData = await spearhead.getUser(await provider.getSigner().getAddress());
+    const signer = await provider.getSigner().getAddress();
+    const spearheadData = await spearhead.getUser(signer);
+    const expiryData = await spearhead.viewUserLevelExpired(signer, 1);
+    setExpiryData(expiryData);
+    setExpiryLvlData(1);
     setSpearhead(spearhead);
     setSpearheadData(spearheadData);
   }, []);
@@ -43,7 +49,7 @@ function App() {
     const referrerId = e.target.elements[0].value;
     const signer = await provider.getSigner();
     const regUser = new ethers.Contract(spearhead.address, Spearhead.abi, signer);
-    const tx = await regUser.regUser(referrerId, {value: "50000000000000000"});
+    const tx = await regUser.regUser(referrerId, {value: "30000000000000000"});
     await tx.wait();
 
     regUser.on("regLevelEvent", async (user, referrer, time, event) => {
@@ -54,7 +60,7 @@ function App() {
     });
 
     const newUser = await spearhead.getUser(await provider.getSigner().getAddress());
-    setFreedomData(newUser);
+    setSpearheadData(newUser);
     console.log(newUser);
   };
 
@@ -75,7 +81,7 @@ function App() {
     });
 
     const updatedUser = await spearhead.getUser(await provider.getSigner().getAddress());
-    setFreedomData(updatedUser);
+    setSpearheadData(updatedUser);
     console.log(updatedUser);
   };
 
@@ -108,6 +114,14 @@ function App() {
     const walletResponse = await connectWallet();
     setStatus(walletResponse.status);
     setWallet(walletResponse.address);
+  };
+
+  const viewUserLevelExpired = async e => {
+    e.preventDefault();
+    const level = e.target.elements[0].value;
+    setExpiryLvlData(level);
+    const expiry = await spearhead.viewUserLevelExpired(await provider.getSigner().getAddress(),level);
+    setExpiryData(expiry);
   };
 
   if(
@@ -167,10 +181,33 @@ function App() {
               type="submit" 
               className="btn btn-primary"
             >
-              Register
+              Buy Level
             </button>
           </form>
         </div>
+
+        <div className='col-sm-6'>
+          <h2>View User Level Expiry</h2>
+          <form className="form-inline" onSubmit={e => viewUserLevelExpired(e)}>
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder="Input level to view..."
+            />
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+            >
+              View
+            </button>
+          </form>
+        </div>
+
+        <div className='col-sm-6'>
+          <h2>User Level Expiry:</h2>
+          <p>{expiryLvl.toString()} {expiry.toString()}</p>
+        </div>
+
         <p id="status" style={{ color: "red" }}>
         {status}
         </p>

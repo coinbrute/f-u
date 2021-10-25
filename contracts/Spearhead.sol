@@ -74,7 +74,7 @@ contract SpearheadProtocol is Ownable {
     }
     uint public adminFee = 16 ether;
     uint public currentId = 0;
-    uint public PERIOD_LENGTH = 60 days;
+    uint public PERIOD_LENGTH = 5 minutes;
     uint referrer1Limit = 2;
     bool public lockStatus;
     

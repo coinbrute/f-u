@@ -1,20 +1,29 @@
-export const getTxValue = (level) => {
+const getTxValue = (level) => {
     switch(level) {
-        case "3":
-            return "450000000000000000";
-        case "4":
-            return "1350000000000000000";
-        case "5":
-            return "4050000000000000000";
-        case "6":
-            return "12150000000000000000";
-        case "7":
-            return "36450000000000000000";
-        case "8":
-            return "109350000000000000000";
+        case "1":
+            return "30000000000000000";
         case "2":
-        default:
-            return "150000000000000000";
+            return "50000000000000000";
+        case "3":
+            return "100000000000000000";
+        case "4":
+            return "500000000000000000";
+        case "5":
+            return "1000000000000000000";
+        case "6":
+            return "3000000000000000000";
+        case "7":
+            return "7000000000000000000";
+        case "8":
+            return "12000000000000000000";
+        case "9":
+            return "15000000000000000000";
+        case "10":
+            return "25000000000000000000";
+        case "11":
+            return "30000000000000000000";
+        case "12":
+            return "39000000000000000000";
     }
 }
 
@@ -95,3 +104,5 @@ export const getCurrentWalletConnected = async () => {
         };
     }
 };
+
+export default getTxValue;
