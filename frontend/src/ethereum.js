@@ -1,6 +1,6 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import { ethers, Contract } from 'ethers';
-import FreedomUnlimited from './contracts/FreedomUnlimited.json';
+import Spearhead from './contracts/Spearhead.json';
 
 const getBlockchain = () =>
   new Promise( async (resolve, reject) => {
@@ -11,12 +11,12 @@ const getBlockchain = () =>
       provider = new ethers.providers.Web3Provider(provider);
       const signer = provider.getSigner();
 
-      const freedomUnlimited = new Contract(
-        FreedomUnlimited.networks[networkId].address,
-        FreedomUnlimited.abi,
+      const spearhead = new Contract(
+        Spearhead.networks[networkId].address,
+        Spearhead.abi,
         signer
       );
-      resolve({freedomUnlimited});
+      resolve({spearhead});
 
       return;
     }

@@ -1,5 +1,5 @@
-const FreedomUnlimited = artifacts.require("FreedomUnlimited");
+const Spearhead = artifacts.require("Spearhead");
 
 module.exports = function (deployer) {
-  deployer.deploy(FreedomUnlimited);
+  deployer.deploy(Spearhead);
 };

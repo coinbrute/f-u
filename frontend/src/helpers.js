@@ -1,4 +1,4 @@
-const getTxValue = (level) => {
+export const getTxValue = (level) => {
     switch(level) {
         case "3":
             return "450000000000000000";
@@ -19,17 +19,17 @@ const getTxValue = (level) => {
 }
 
 export const connectWallet = async () => {
-    if(window.ethereum) {
+    if (window.ethereum) {
         try {
             const addressArray = await window.ethereum.request({
                 method: "eth_requestAccounts",
             });
             const obj = {
-                status: "Write a message in the text-field above.",
+                status: "MetaMask Requested. Always double check signing account before sendng transactions.",
                 address: addressArray[0],
             };
             return obj;
-        } catch(err) {
+        } catch (err) {
             return {
                 address: "",
                 status: "😥 " + err.message,
@@ -40,36 +40,38 @@ export const connectWallet = async () => {
             address: "",
             status: (
                 <span>
-                    <p>{" "} 🦊 {" "}
-                        <a target="_blank" rel="noreferrer" href={`https://metamask.io/download.html`}>
-                            You must install Metamask, a virtual Ethereum wallet, in your
-                            browser.
-                        </a>
-                    </p>
+                <p>
+                    {" "}
+                    🦊{" "}
+                    <a target="_blank" rel="noreferrer" href={`https://metamask.io/download.html`}>
+                    You must install Metamask, a virtual Ethereum wallet, in your
+                    browser.
+                    </a>
+                </p>
                 </span>
             ),
         };
     }
 };
 
-export const getCurrentWalletConnected = async () => { 
-    if(window.etherem) {
+export const getCurrentWalletConnected = async () => {
+    if (window.ethereum) {
         try {
             const addressArray = await window.ethereum.request({
                 method: "eth_accounts",
             });
-            if (addressArray.length > 0) {
-                return {
-                    address: addressArray[0],
-                    status: "👆🏽 Write a message in the text-field above.",
-                };
-            } else {
-                return {
-                    address: "",
-                    status: "🦊 Connect to Metamask using the top right button.",
-                };
-            }
-        } catch(err) {
+        if (addressArray.length > 0) {
+            return {
+                address: addressArray[0],
+                status: "MetaMask Connected. Always double check signing account before sendng transactions.",
+            };
+        } else {
+            return {
+                address: "",
+                status: "🦊 Connect to Metamask using the top right button.",
+            };
+        }
+        } catch (err) {
             return {
                 address: "",
                 status: "😥 " + err.message,
@@ -79,17 +81,17 @@ export const getCurrentWalletConnected = async () => {
         return {
             address: "",
             status: (
-              <span>
-                <p>{" "} 🦊 {" "}
-                  <a target="_blank" rel="noreferrer" href={`https://metamask.io/download.html`}>
+                <span>
+                <p>
+                    {" "}
+                    🦊{" "}
+                    <a target="_blank" rel="noreferrer" href={`https://metamask.io/download.html`}>
                     You must install Metamask, a virtual Ethereum wallet, in your
                     browser.
-                  </a>
+                    </a>
                 </p>
-              </span>
+                </span>
             ),
-          };
+        };
     }
 };
-
-export default getTxValue;

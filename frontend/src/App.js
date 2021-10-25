@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import getBlockchain from './ethereum.js';
 import { ethers } from 'ethers';
-import FreedomUnlimited from './contracts/FreedomUnlimited.json';
-import getTxValue from './helpers.js';
+import Spearhead from './contracts/Spearhead.json';
 import {
+  getTxValue,
   connectWallet,
   getCurrentWalletConnected,
 } from "./helpers.js";
@@ -11,40 +11,28 @@ import {
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
 function App() {
-  const [freedomUnlimited, setFreedomUnlimited] = useState(undefined);
-  const [user, setFreedomData] = useState(undefined);
+  const [spearhead, setSpearhead] = useState(undefined);
+  const [user, setSpearheadData] = useState(undefined);
   const [walletAddress, setWallet] = useState("");
   // eslint-disable-next-line
   const [status, setStatus] = useState("");
 
-  useEffect(() => {
-
-    async function fetchData() {
-
-      try {
-        const {address, status} = await getCurrentWalletConnected();
-        setWallet(address);
-        setStatus(status);
-        addWalletListener();
-        const { freedomUnlimited } = await getBlockchain();
-        const freedomUnlimitedData = await freedomUnlimited.getUser(await provider.getSigner().getAddress());
-        setFreedomUnlimited(freedomUnlimited);
-        setFreedomData(freedomUnlimitedData);
-
-      } catch (error) {
-        console.log("error");
-        console.error(error);
-      }
-    
-    }
-    fetchData();
+  useEffect( async () => {
+    const {address, status} = await getCurrentWalletConnected();
+    setWallet(address);
+    setStatus(status);
+    addWalletListener();
+    const { spearhead } = await getBlockchain();
+    const spearheadData = await spearhead.getUser(await provider.getSigner().getAddress());
+    setSpearhead(spearhead);
+    setSpearheadData(spearheadData);
   }, []);
 
   const regUser = async e => {
     e.preventDefault();
     const referrerId = e.target.elements[0].value;
     const signer = await provider.getSigner();
-    const regUser = new ethers.Contract(freedomUnlimited.address, FreedomUnlimited.abi, signer);
+    const regUser = new ethers.Contract(spearhead.address, Spearhead.abi, signer);
     const tx = await regUser.regUser(referrerId, {value: "50000000000000000"});
     await tx.wait();
 
@@ -55,7 +43,7 @@ function App() {
                   at block timestamp ${time}.`)
     });
 
-    const newUser = await freedomUnlimited.getUser(await provider.getSigner().getAddress());
+    const newUser = await spearhead.getUser(await provider.getSigner().getAddress());
     setFreedomData(newUser);
     console.log(newUser);
   };
@@ -64,7 +52,7 @@ function App() {
     e.preventDefault();
     const level = e.target.elements[0].value;
     const signer = await provider.getSigner();
-    const buyLevel = new ethers.Contract(freedomUnlimited.address, FreedomUnlimited.abi, signer);
+    const buyLevel = new ethers.Contract(spearhead.address, Spearhead.abi, signer);
     const txValue = getTxValue(level);
     const tx = await buyLevel.buyLevel(level, {value: txValue});
     await tx.wait();
@@ -76,7 +64,7 @@ function App() {
                   at block timestame ${time}.`)
     });
 
-    const updatedUser = await freedomUnlimited.getUser(await provider.getSigner().getAddress());
+    const updatedUser = await spearhead.getUser(await provider.getSigner().getAddress());
     setFreedomData(updatedUser);
     console.log(updatedUser);
   };
@@ -86,7 +74,7 @@ function App() {
       window.ethereum.on("accountsChanged", (accounts) => {
         if (accounts.length > 0) {
           setWallet(accounts[0]);
-          setStatus("👆🏽 Write a message in the text-field above.");
+          setStatus("MetaMask Connected. Always double check signing account before sendng transactions.");
         } else {
           setWallet("");
           setStatus("🦊 Connect to Metamask using the top right button.");
@@ -113,7 +101,7 @@ function App() {
   };
 
   if(
-    typeof freedomUnlimited === 'undefined' || typeof user === 'undefined'
+    typeof spearhead === 'undefined' || typeof user === 'undefined'
   ) {
     return 'Loading...';
   }
@@ -173,7 +161,9 @@ function App() {
             </button>
           </form>
         </div>
-
+        <p id="status" style={{ color: "red" }}>
+        {status}
+        </p>
       </div>
     </div>
     
