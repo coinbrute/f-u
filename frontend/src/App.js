@@ -28,6 +28,16 @@ function App() {
     setSpearheadData(spearheadData);
   }, []);
 
+  window.ethereum.on("accountsChanged", (accounts) => {
+    if (accounts.length > 0) {
+      setWallet(accounts[0]);
+      setStatus("MetaMask Connected. Always double check signing account before sendng transactions.");
+    } else {
+      setWallet("");
+      setStatus("🦊 Connect to Metamask using the top right button.");
+    }
+  });
+
   const regUser = async e => {
     e.preventDefault();
     const referrerId = e.target.elements[0].value;
