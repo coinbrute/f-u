@@ -480,7 +480,7 @@ contract SpearheadSubscriptionService {
             level.amount,
             block.timestamp
         );
-        
+
         subscriptions[msg.sender][_level] = Subscription(
             msg.sender, 
             _service,
@@ -750,9 +750,6 @@ contract SpearheadProtocol is Ownable,SpearheadSubscriptionService {
                 // pay                             referrer     commission                        owner         ownerfee
                 subService.pay(msg.sender, _level, referer[0], LEVEL_PRICE[_level].sub(_adminFee), ownerWallet, _adminFee);
             }
-            // transactions 
-            require(payable(referer[0]).send(LEVEL_PRICE[_level].sub(_adminFee)) 
-                    && payable(ownerWallet).send(_adminFee), "Transaction Failure");
 
             // track eth earnings
             users[referer[0]].totalEarningEth = users[referer[0]].totalEarningEth.add(LEVEL_PRICE[_level]);
