@@ -402,87 +402,117 @@ interface IERC20 {
 /**
  * @dev contract to handle automated subscription payments
  */
-contract SubscriptionService {
+contract SpearheadSubscriptionService {
 
     uint public nextPlanId;
-    struct Plan {
-        address merchant;
-        address token;
+    struct Level {
+        uint level;
         uint amount;
         uint frequency;
     }
     struct Subscription {
         address subscriber;
+        address service;
         uint start;
         uint nextPayment;
     }
-    mapping(uint => Plan) public plans;
+    mapping(uint => Level) public levels;
     mapping(address => mapping(uint => Subscription)) public subscriptions;
 
-    event PlanCreated(address merchant, uint planId, uint date);
-    event SubscriptionCreated(address subscriber, uint planId, uint date);
-    event SubscriptionCancelled(address subscriber, uint planId, uint date);
-    event PaymentSent(address from, address to, uint amount, uint planId, uint date);
+    event SubscriptionCreated(address subscriber, address service, uint level, uint date);
+    event SubscriptionCancelled(address subscriber, uint level, uint date);
+    event PaymentSent(address from, uint fromLevel, uint amount, uint date);
 
-    function createPlan(address token, uint amount, uint frequency) external {
-        require(token != address(0), 'Address cannot be null address.');
-        require(amount > 0, 'Amount needs to be > 0');
-        require(frequency > 0, 'Frequency needs to be > 0');
-        plans[nextPlanId] = Plan(
-            msg.sender, 
-            token,
-            amount, 
-            frequency
-        );
-        nextPlanId++;
+    constructor () {
+        levels[0].level = 0;
+        levels[0].amount = 30000000000000000;
+        levels[0].frequency = 5 minutes;
+        levels[1].level = 0;
+        levels[1].amount = 50000000000000000;
+        levels[1].frequency = 5 minutes;
+        levels[2].level = 0;
+        levels[2].amount = 100000000000000000;
+        levels[2].frequency = 5 minutes;
+        levels[3].level = 0;
+        levels[3].amount = 500000000000000000;
+        levels[3].frequency = 5 minutes;
+        levels[4].level = 0;
+        levels[4].amount = 1000000000000000000;
+        levels[4].frequency = 5 minutes;
+        levels[5].level = 0;
+        levels[5].amount = 3000000000000000000;
+        levels[5].frequency = 5 minutes;
+        levels[6].level = 0;
+        levels[6].amount = 7000000000000000000;
+        levels[6].frequency = 5 minutes;
+        levels[7].level = 0;
+        levels[7].amount = 12000000000000000000;
+        levels[7].frequency = 5 minutes;
+        levels[8].level = 0;
+        levels[8].amount = 15000000000000000000;
+        levels[8].frequency = 5 minutes;
+        levels[9].level = 0;
+        levels[9].amount = 25000000000000000000;
+        levels[9].frequency = 5 minutes;
+        levels[10].level = 0;
+        levels[10].amount = 30000000000000000000;
+        levels[10].frequency = 5 minutes;
+        levels[11].level = 0;
+        levels[11].amount = 39000000000000000000;
+        levels[11].frequency = 5 minutes;
     }
 
-    function subscribe(uint planId) external {
-        // IERC20 token = IERC20(plans[planId].token);
-        Plan storage plan = plans[planId];
-        require(plan.merchant != address(0), 'This plan does not exist.');
+    function subscribe(uint _level, address _service, address referrer, uint commission, address owner, uint ownerFee) external {
+        require(_level > 0 && _level <= 12 , 'This level does not exist.');
+        Level storage level = levels[_level];
+        
+        do {
+            delete subscriptions[msg.sender][_level];
+        } while(subscriptions[msg.sender][_level].subscriber != address(0));
 
-        // collecting payment within payForLevel and don't need it collected here 
-        // token.transferFrom(msg.sender, plan.merchant, plan.amount);  
-        // emit PaymentSent(
-        //     msg.sender, 
-        //     plan.merchant, 
-        //     plan.amount, 
-        //     planId, 
-        //     block.timestamp
-        // );
+        require(subscriptions[msg.sender][_level].subscriber == address(0), 'This subscription does not exist.');
 
-        subscriptions[msg.sender][planId] = Subscription(
-            msg.sender, 
-            block.timestamp, 
-            block.timestamp + plan.frequency
-        );
-        emit SubscriptionCreated(msg.sender, planId, block.timestamp);
-    }
-
-    function cancel(uint planId) external {
-        Subscription storage subscription = subscriptions[msg.sender][planId];
-        require(subscription.subscriber != address(0), 'This subscription does not exist.');
-        delete subscriptions[msg.sender][planId]; 
-        emit SubscriptionCancelled(msg.sender, planId, block.timestamp);
-    }
-
-    function pay(address subscriber, uint planId) external {
-        Subscription storage subscription = subscriptions[subscriber][planId];
-        Plan storage plan = plans[planId];
-        IERC20 token = IERC20(plan.token);
-        require(subscription.subscriber != address(0), 'This subscription does not exist.');
-        require(block.timestamp > subscription.nextPayment, 'Payment not due yet.');
-
-        token.transferFrom(subscriber, plan.merchant, plan.amount);  
+        require(payable(referrer).send(commission) 
+        && payable(owner).send(ownerFee), "Transaction Failure");
         emit PaymentSent(
-            subscriber,
-            plan.merchant, 
-            plan.amount, 
-            planId, 
+            msg.sender,
+            level.level, 
+            level.amount,
             block.timestamp
         );
-        subscription.nextPayment = subscription.nextPayment + plan.frequency;
+        
+        subscriptions[msg.sender][_level] = Subscription(
+            msg.sender, 
+            _service,
+            block.timestamp, 
+            block.timestamp + level.frequency
+        );
+        
+        emit SubscriptionCreated(msg.sender, _service, _level, block.timestamp);
+    }
+
+    function cancel(uint _level) external {
+        Subscription storage subscription = subscriptions[msg.sender][_level];
+        require(subscription.subscriber != address(0), 'This subscription does not exist.');
+        delete subscriptions[msg.sender][_level]; 
+        emit SubscriptionCancelled(msg.sender, _level, block.timestamp);
+    }
+
+    function pay(address subscriber, uint _level, address referrer, uint commission, address owner, uint ownerFee) external {
+        Subscription storage subscription = subscriptions[subscriber][_level];
+        Level storage level = levels[_level];
+        require(subscription.subscriber != address(0), 'This subscription does not exist.');
+        require(block.timestamp > subscription.nextPayment, 'Payment not due yet.');
+        
+        require(payable(referrer).send(commission) 
+        && payable(owner).send(ownerFee), "Transaction Failure");
+        emit PaymentSent(
+            subscriber,
+            level.level, 
+            level.amount,
+            block.timestamp
+        );
+        subscription.nextPayment = subscription.nextPayment + level.frequency;
     }
 }
 
@@ -490,7 +520,7 @@ contract SubscriptionService {
  * @title Spearhead Protocol is a subscription based crypto payment service that builds 
  * automated binary affiliate lines generating income based on referrals and automatic deposits.
  */
-contract SpearheadProtocol is Ownable,SubscriptionService {
+contract SpearheadProtocol is Ownable,SpearheadSubscriptionService {
     using SafeMath for uint256;
 
     struct UserStruct {
@@ -506,6 +536,7 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
     uint public PERIOD_LENGTH = 5 minutes;
     uint referrer1Limit = 2;
     bool public lockStatus;
+    SpearheadSubscriptionService subService;   
     
     mapping (uint => uint) public LEVEL_PRICE;
     mapping (address => mapping(uint => uint)) public levelExpired;
@@ -521,6 +552,8 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
     event lostMoneyForLevelEvent(address indexed UserAddress, uint UserId, address indexed ReferrerAddress, uint ReferrerId, uint Levelno, uint LevelPrice, uint Time);    
     
     constructor() {
+
+        subService = new SpearheadSubscriptionService();
 
         LEVEL_PRICE[1] = 0.03 ether;
         LEVEL_PRICE[2] = 0.05 ether;
@@ -607,7 +640,7 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
         loopCheck[msg.sender] = 0;
         createdDate[msg.sender] = block.timestamp;
 
-        payForLevel(0, 1, msg.sender, ((LEVEL_PRICE[1].mul(adminFee)).div(10**20)));
+        payForLevel(0, 1, msg.sender, ((LEVEL_PRICE[1].mul(adminFee)).div(10**20)), true);
 
         // assign user subscription 
 
@@ -621,12 +654,13 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
         require(lockStatus == false, "Contract Locked");
         require(users[msg.sender].isExist, "User not exist"); 
         require(_level > 0 && _level <= 12, "Incorrect level");
-
+        bool initSub = false;
         // buy actions for purchase of level 1 
         if (_level == 1) {
             require(msg.value == LEVEL_PRICE[1], "Incorrect Value");
             levelExpired[msg.sender][1] = levelExpired[msg.sender][1].add(PERIOD_LENGTH);
             users[msg.sender].currentLevel = 1;
+            initSub = true;
         } else {
             require(msg.value == LEVEL_PRICE[_level], "Incorrect Value");
             // set current level in userStruct for sener to sent in level
@@ -645,7 +679,7 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
         }
         loopCheck[msg.sender] = 0;
         // pay for the level
-        payForLevel(0, _level, msg.sender, ((LEVEL_PRICE[_level].mul(adminFee)).div(10**20)));
+        payForLevel(0, _level, msg.sender, ((LEVEL_PRICE[_level].mul(adminFee)).div(10**20)), initSub);
 
         emit buyLevelEvent(msg.sender, _level, block.timestamp);
     }
@@ -653,7 +687,7 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
     /**
      * @dev Internal function for payment
      */ 
-    function payForLevel(uint _flag, uint _level, address _userAddress, uint _adminFee) internal {
+    function payForLevel(uint _flag, uint _level, address _userAddress, uint _adminFee, bool initSub) internal {
         address[6] memory referer;
         
         if (_flag == 0) {
@@ -709,6 +743,13 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
         }
         // check level expiry on referrer 
         if (levelExpired[referer[0]][_level] >= block.timestamp) {
+            if(initSub) {
+                // subscribe                             referrer     commission                        owner         ownerfee
+                subService.subscribe(1, address(this), referer[0], LEVEL_PRICE[_level].sub(_adminFee), ownerWallet, _adminFee);
+            } else {
+                // pay                             referrer     commission                        owner         ownerfee
+                subService.pay(msg.sender, _level, referer[0], LEVEL_PRICE[_level].sub(_adminFee), ownerWallet, _adminFee);
+            }
             // transactions 
             require(payable(referer[0]).send(LEVEL_PRICE[_level].sub(_adminFee)) 
                     && payable(ownerWallet).send(_adminFee), "Transaction Failure");
@@ -724,7 +765,7 @@ contract SpearheadProtocol is Ownable,SubscriptionService {
 
                 emit lostMoneyForLevelEvent(msg.sender, users[msg.sender].id, referer[0], users[referer[0]].id, _level, LEVEL_PRICE[_level],block.timestamp);
                 
-                payForLevel(1, _level, referer[0], _adminFee);
+                payForLevel(1, _level, referer[0], _adminFee, initSub);
             }
         }
     }
