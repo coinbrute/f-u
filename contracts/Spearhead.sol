@@ -320,83 +320,12 @@ contract Ownable is Context {
     }
 }
 
-
 /**
- * @dev Interface of the ERC20 standard as defined in the EIP.
+ * @dev interface for Aion scheduling contract
  */
-interface IERC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through {transferFrom}. This is
-     * zero by default.
-     *
-     * This value changes when {approve} or {transferFrom} are called.
-     */
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+abstract contract Aion {
+    uint256 public serviceFee;
+    function ScheduleCall(uint256 blocknumber, address to, uint256 value, uint256 gaslimit, uint256 gasprice, bytes calldata data, bool schedType) virtual public payable returns (uint);
 }
 
 /**
@@ -404,6 +333,7 @@ interface IERC20 {
  */
 contract SpearheadSubscriptionService {
 
+    Aion aion;
     uint public nextPlanId;
     struct Level {
         uint level;
@@ -417,6 +347,7 @@ contract SpearheadSubscriptionService {
         uint nextPayment;
     }
     mapping(uint => Level) public levels;
+    mapping(address => uint) public balances;
     mapping(address => mapping(uint => Subscription)) public subscriptions;
 
     event SubscriptionCreated(address subscriber, address service, uint level, uint date);
@@ -424,42 +355,44 @@ contract SpearheadSubscriptionService {
     event PaymentSent(address from, uint fromLevel, uint amount, uint date);
 
     constructor () {
-        levels[0].level = 0;
+        levels[0].level = 1;
         levels[0].amount = 30000000000000000;
         levels[0].frequency = 5 minutes;
-        levels[1].level = 0;
+        levels[1].level = 2;
         levels[1].amount = 50000000000000000;
         levels[1].frequency = 5 minutes;
-        levels[2].level = 0;
+        levels[2].level = 3;
         levels[2].amount = 100000000000000000;
         levels[2].frequency = 5 minutes;
-        levels[3].level = 0;
+        levels[3].level = 4;
         levels[3].amount = 500000000000000000;
         levels[3].frequency = 5 minutes;
-        levels[4].level = 0;
+        levels[4].level = 5;
         levels[4].amount = 1000000000000000000;
         levels[4].frequency = 5 minutes;
-        levels[5].level = 0;
+        levels[5].level = 6;
         levels[5].amount = 3000000000000000000;
         levels[5].frequency = 5 minutes;
-        levels[6].level = 0;
+        levels[6].level = 7;
         levels[6].amount = 7000000000000000000;
         levels[6].frequency = 5 minutes;
-        levels[7].level = 0;
+        levels[7].level = 8;
         levels[7].amount = 12000000000000000000;
         levels[7].frequency = 5 minutes;
-        levels[8].level = 0;
+        levels[8].level = 9;
         levels[8].amount = 15000000000000000000;
         levels[8].frequency = 5 minutes;
-        levels[9].level = 0;
+        levels[9].level = 10;
         levels[9].amount = 25000000000000000000;
         levels[9].frequency = 5 minutes;
-        levels[10].level = 0;
+        levels[10].level = 11;
         levels[10].amount = 30000000000000000000;
         levels[10].frequency = 5 minutes;
-        levels[11].level = 0;
+        levels[11].level = 12;
         levels[11].amount = 39000000000000000000;
         levels[11].frequency = 5 minutes;
+
+        aion = Aion(0xFcFB45679539667f7ed55FA59A15c8Cad73d9a4E);
     }
 
     function subscribe(uint _level, address _service, address referrer, uint commission, address owner, uint ownerFee) external {
@@ -487,6 +420,11 @@ contract SpearheadSubscriptionService {
             block.timestamp, 
             block.timestamp + level.frequency
         );
+
+        uint256 call1Cost = commission + 5500000*1e9 + aion.serviceFee();
+        aion.ScheduleCall{value:call1Cost}( block.timestamp + level.frequency, referrer, commission, 5500000, 1e9, hex"00", true);
+        uint256 call2Cost = ownerFee + 5500000*1e9 + aion.serviceFee();
+        aion.ScheduleCall{value:call2Cost}( block.timestamp + level.frequency, owner, ownerFee, 5500000, 1e9, hex"00", true);
         
         emit SubscriptionCreated(msg.sender, _service, _level, block.timestamp);
     }
@@ -498,14 +436,18 @@ contract SpearheadSubscriptionService {
         emit SubscriptionCancelled(msg.sender, _level, block.timestamp);
     }
 
-    function pay(address subscriber, uint _level, address referrer, uint commission, address owner, uint ownerFee) external {
+    function pay(address subscriber, uint _level, address referrer, uint commission, address owner, uint ownerFee) external payable {
         Subscription storage subscription = subscriptions[subscriber][_level];
         Level storage level = levels[_level];
         require(subscription.subscriber != address(0), 'This subscription does not exist.');
         require(block.timestamp > subscription.nextPayment, 'Payment not due yet.');
         
+
+
+        // called from within payForLevel in protocol contract
         require(payable(referrer).send(commission) 
         && payable(owner).send(ownerFee), "Transaction Failure");
+
         emit PaymentSent(
             subscriber,
             level.level, 
@@ -582,12 +524,21 @@ contract SpearheadProtocol is Ownable,SpearheadSubscriptionService {
         users[ownerWallet] = userStruct;
         userList[currentId] = ownerWallet;
 
+        // // create subscription plan and subscribe owner to it
+        // subService.subscribe(
+        //     1,
+        //     address(this),
+        //     users[ownerWallet].referrerID,
+        //     LEVEL_PRICE[1].sub(((LEVEL_PRICE[1].mul(adminFee)).div(10**20))),
+        //     ownerWallet,
+        //     ((LEVEL_PRICE[1].mul(adminFee)).div(10**20))
+        // );
+
         for(uint i = 1; i <= 12; i++) {
             users[ownerWallet].currentLevel = i;
             levelExpired[ownerWallet][i] = 55555555555;
         }
 
-        // create subscription plan and subscribe owner to it
     } 
 
     receive () external payable {
